@@ -46,11 +46,6 @@ public class Fade
         arduino.analogWrite(ledBlue, constLedBlue);
         arduino.analogWrite(ledGreen, constLedGreen);
         delay(35);
-        println("constServo: " + constServo);
-        println("ledRedValue: " + ledRedValue);
-        println("constLedBlue: " + constLedBlue);
-        println("constLedGreen: " + constLedGreen);
-    
       }
     } else {
       while (ledRedValue < ledRedValueEnd) {
@@ -64,10 +59,6 @@ public class Fade
         arduino.analogWrite(ledBlue, constLedBlue);
         arduino.analogWrite(ledGreen, constLedGreen);
         delay(35);
-        println("constServo: " + constServo);
-        println("ledRedValue: " + ledRedValue);
-        println("constLedBlue: " + constLedBlue);
-        println("constLedGreen: " + constLedGreen);
       }
     }
   }
