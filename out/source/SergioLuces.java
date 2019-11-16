@@ -26,7 +26,7 @@ Scene scene3;
 
 Fade fade1;
 Fade fade2;
-BlinkTwoScenes blink1;
+BlinkTwoScenes blinkScenes;
 
 
 Arduino arduino; // Crea el objeto Arduino
@@ -40,10 +40,17 @@ int greenVal = 0;
 int blueVal = 0;
 
 int ledRed = 5;
-int ledGreen = 3;
-int ledBlue = 6;
+int ledGreen = 6;
+int ledBlue = 3;
 
-int servo = 13;
+int motorPinHigh = 13;  //9 10 11
+int motorPinLow = 9;
+int motorPinSpeed = 10;
+
+int motorSpeedLimitLow = 100;
+int motorSpeedLimitHigh = 200;
+
+int servo = 11;
 
 
 public void setup()
@@ -54,28 +61,28 @@ public void setup()
 
   //print( Arduino.list());
   // opening up the Serial port, change the "COM5" and baud rate
-  arduino = new Arduino(this, "/dev/ttyUSB0", 57600); // Configura el puerto como
+  arduino = new Arduino(this, "/dev/ttyUSB0", 57600);
+  arduino.pinMode(motorPinHigh, Arduino.OUTPUT);
+  arduino.pinMode(motorPinLow, Arduino.OUTPUT);
 
   arduino.pinMode(servo, Arduino.SERVO);
   
-  scene1 = new Scene(ledRed, 200,ledBlue, 200,ledGreen, 0,servo,0);
-  scene2 = new Scene(ledRed, 200,ledBlue, 0,ledGreen, 200,servo,170);
-  scene3 = new Scene(ledRed, 200,ledBlue, 0,ledGreen, 0,servo,100);
+  scene1 = new Scene(0, 200, 0, 10);
+  scene2 = new Scene(0, 0, 200, 0);
+  scene3 = new Scene(200, 0, 0, 90);
 
-  blink1 = new BlinkTwoScenes(scene1,scene2,500,4);
-  fade1 = new Fade(scene2,scene3,1);
+  blinkScenes = new BlinkTwoScenes(scene1,scene2);
+  fade1 = new Fade(scene2,scene3);
 
-  blink1.drawBlink();
-  // fade1.drawFade();
-  // scene1.blink(500,4);
-  // fade2 = new Fade(scene2,scene3,2);
-  // scene1.blink(50,3);
-
-
-  // println(scene1.ledRed);
+  // scene3.drawScene("STOP", 0, 3000);
+  // blinkScenes.drawBlink(50,5000);
+  fade1.drawFade("UP", 150, 5000);
+  // scene3.blink(50,5000);
   
 }
 
+public void draw(){
+}
 
 Scene scene;
 
@@ -83,41 +90,34 @@ public class BlinkTwoScenes
 {
   BlinkTwoScenes(
     Scene scene1, 
-    Scene scene2, 
-    int f,
-    int t
+    Scene scene2
     )
   {
-    time = t;
-    frecuency = f;
-    count = (t*500)/f;
-    scene1LedRed = scene1.ledRed;
+    
     scene1LedRedValue = scene1.ledRedValue; 
-    scene1LedGreen = scene1.ledGreen;
     scene1LedGreenValue = scene1.ledGreenValue; 
-    scene1LedBlue = scene1.ledBlue;
     scene1LedBlueValue = scene1.ledBlueValue;
 
-    scene2LedRed = scene2.ledRed;
     scene2LedRedValue = scene2.ledRedValue; 
-    scene2LedGreen = scene2.ledGreen;
     scene2LedGreenValue = scene2.ledGreenValue; 
-    scene2LedBlue = scene2.ledBlue;
     scene2LedBlueValue = scene2.ledBlueValue; 
   }
 
-  private void drawBlink()
+  private void drawBlink(int f, int t)
   {
+    time = t;
+    frecuency = f;
+    count = (t*0.5f)/f;
     for (int i = 0; i < count; ++i) {
-        arduino.analogWrite(scene1LedRed, scene1LedRedValue);
-        arduino.analogWrite(scene1LedGreen, scene1LedGreenValue);
-        arduino.analogWrite(scene1LedBlue, scene1LedBlueValue);
+        arduino.analogWrite(ledRed, scene1LedRedValue);
+        arduino.analogWrite(ledGreen, scene1LedGreenValue);
+        arduino.analogWrite(ledBlue, scene1LedBlueValue);
         
         delay(frecuency);
         
-        arduino.analogWrite(scene2LedRed, scene2LedRedValue);
-        arduino.analogWrite(scene2LedGreen, scene2LedGreenValue);
-        arduino.analogWrite(scene2LedBlue, scene2LedBlueValue);
+        arduino.analogWrite(ledRed, scene2LedRedValue);
+        arduino.analogWrite(ledGreen, scene2LedGreenValue);
+        arduino.analogWrite(ledBlue, scene2LedBlueValue);
         delay(frecuency);
         println("i: "+i);
     }
@@ -125,20 +125,14 @@ public class BlinkTwoScenes
 
   private int time;
   private int frecuency;
-  private int count;
+  private float count;
 
-  private int scene1LedRed;
   private int scene1LedRedValue;
-  private int scene1LedGreen;
   private int scene1LedGreenValue;
-  private int scene1LedBlue;
   private int scene1LedBlueValue;
 
-  private int scene2LedRed;
   private int scene2LedRedValue;
-  private int scene2LedGreen;
   private int scene2LedGreenValue;
-  private int scene2LedBlue;
   private int scene2LedBlueValue;
 }
 Scene sceneStart;
@@ -148,126 +142,175 @@ public class Fade
 {
   Fade(
     Scene sceneStart, 
-    Scene sceneEnd,
-    int F
+    Scene sceneEnd
     )
   {
-    fadeAmount = F;
-    ledRed = sceneStart.ledRed;
-    ledRedValue = sceneStart.ledRedValue; 
-    ledRedValueStart = sceneStart.ledRedValue; 
-    ledRedValueEnd = sceneEnd.ledRedValue;
+    fadeAmount = 1;
 
-    ledBlue = sceneStart.ledBlue;
+    fade = 0; 
+    fadeStart = 0; 
+
+    ledRedValueStart = sceneStart.ledRedValue; 
+    ledRedValueEnd = sceneEnd.ledRedValue; 
+
     ledBlueValueStart = sceneStart.ledBlueValue; 
     ledBlueValueEnd = sceneEnd.ledBlueValue; 
     
-    ledGreen = sceneStart.ledGreen;
     ledGreenValueStart = sceneStart.ledGreenValue; 
     ledGreenValueEnd = sceneEnd.ledGreenValue; 
     
-    servo = sceneStart.servo;
     servoPositionStart = sceneStart.servoPosition;
     servoPositionEnd = sceneEnd.servoPosition;
-    // constLedRed = map(constLedRed, 0, 100, 0, l);
-    constServo = round(map(ledRedValueStart, ledRedValueStart, ledRedValueEnd, servoPositionStart, servoPositionEnd));
+    
     // drawFade();
   }
 
-  private void drawFade()
+  public void drawFade(String elevator, int elevatorSpeed, int t)
   {
-
-    if (ledRedValue >= ledRedValueEnd) {
-      while (ledRedValue > ledRedValueEnd) {
-
-        ledRedValue = ledRedValue - fadeAmount;
-        constLedBlue = round(map(ledRedValue, ledRedValueStart, ledRedValueEnd, ledBlueValueStart, ledBlueValueEnd));
-        constLedGreen = round(map(ledRedValue, ledRedValueStart, ledRedValueEnd, ledGreenValueStart, ledGreenValueEnd));
-        constServo = round(map(ledRedValue, ledRedValueStart, ledRedValueEnd, servoPositionStart, servoPositionEnd));
-        arduino.servoWrite(servo, constServo);
-        arduino.analogWrite(ledRed, ledRedValue);
-        arduino.analogWrite(ledBlue, constLedBlue);
-        arduino.analogWrite(ledGreen, constLedGreen);
-        delay(35);
-        println("constServo: " + constServo);
-        println("ledRedValue: " + ledRedValue);
-        println("constLedBlue: " + constLedBlue);
-        println("constLedGreen: " + constLedGreen);
     
-      }
-    } else {
-      while (ledRedValue < ledRedValueEnd) {
 
-        ledRedValue = ledRedValue + fadeAmount;
-        constLedBlue = round(map(ledRedValue, ledRedValueStart, ledRedValueEnd, ledBlueValueStart, ledBlueValueEnd));
-        constLedGreen = round(map(ledRedValue, ledRedValueStart, ledRedValueEnd, ledGreenValueStart, ledGreenValueEnd));
-        constServo = round(map(ledRedValue, ledRedValueStart, ledRedValueEnd, servoPositionStart, servoPositionEnd));
-        arduino.servoWrite(servo, constServo);
-        arduino.analogWrite(ledRed, ledRedValue);
-        arduino.analogWrite(ledBlue, constLedBlue);
-        arduino.analogWrite(ledGreen, constLedGreen);
-        delay(35);
-        println("constServo: " + constServo);
-        println("ledRedValue: " + ledRedValue);
-        println("constLedBlue: " + constLedBlue);
-        println("constLedGreen: " + constLedGreen);
-      }
+    if(elevatorSpeed < 100){
+      elevatorSpeed = motorSpeedLimitLow;
     }
+
+    if(elevatorSpeed > 200){
+      elevatorSpeed = motorSpeedLimitHigh;
+    }
+    fadeEnd = t/10;
+
+    if(elevator == "UP"){
+      arduino.digitalWrite(motorPinHigh, Arduino.HIGH);
+      arduino.digitalWrite(motorPinLow, Arduino.LOW);
+      arduino.analogWrite(motorPinSpeed, elevatorSpeed);
+      println("elevator: "+elevator);
+      println("elevatorSpeed: "+elevatorSpeed);
+    }
+
+    if(elevator == "DOWN"){
+      arduino.digitalWrite(motorPinHigh, Arduino.LOW);
+      arduino.digitalWrite(motorPinLow, Arduino.HIGH);
+      arduino.analogWrite(motorPinSpeed, elevatorSpeed);
+      println("elevator: "+elevator);
+      println("elevatorSpeed: "+elevatorSpeed);
+    }
+
+    if(elevator == "STOP"){
+      arduino.digitalWrite(motorPinHigh, Arduino.LOW);
+      arduino.digitalWrite(motorPinLow, Arduino.LOW);
+      arduino.analogWrite(motorPinSpeed, 0);
+      println("elevator: "+elevator);
+      println("elevatorSpeed: " +elevatorSpeed);
+    }
+      
+    while (fade < fadeEnd) {
+
+      fade = fade + fadeAmount;
+      constLedRed = round(map(fade, fadeStart, fadeEnd, ledRedValueStart, ledRedValueEnd));
+      constLedBlue = round(map(fade, fadeStart, fadeEnd, ledBlueValueStart, ledBlueValueEnd));
+      constLedGreen = round(map(fade, fadeStart, fadeEnd, ledGreenValueStart, ledGreenValueEnd));
+      constServo = round(map(fade, fadeStart, fadeEnd, servoPositionStart, servoPositionEnd))+90;
+      arduino.servoWrite(servo, constServo);
+      arduino.analogWrite(ledRed, constLedRed);
+      arduino.analogWrite(ledBlue, constLedBlue);
+      arduino.analogWrite(ledGreen, constLedGreen);
+      
+      delay(10);
+    }
+
+    arduino.digitalWrite(motorPinHigh, Arduino.LOW);
+    arduino.digitalWrite(motorPinLow, Arduino.LOW);
+    arduino.analogWrite(motorPinSpeed, elevatorSpeed);
+    println("elevator: STOP");
   }
 
   private int constServo;
+  private int constLedRed;
   private int constLedBlue;
   private int constLedGreen;
+  
+
+  private int fade;
+  private int fadeStart;
+  private float fadeEnd;
   private int fadeAmount;
 
-  private int ledRed;
-  private int ledRedValue; 
   private int ledRedValueStart; 
   private int ledRedValueEnd;
   
-  private int ledBlue;
   private int ledBlueValueStart; 
   private int ledBlueValueEnd;
   
-  private int ledGreen;
   private int ledGreenValueStart; 
   private int ledGreenValueEnd;
   
-  private int servo; 
   private int servoPositionStart;
   private int servoPositionEnd;
 }
 public class Scene
 {
   Scene(
-    int LR, int LRV, 
-    int LG, int LGV, 
-    int LB, int LBV, 
-    int S, int SP
+    int LRV, 
+    int LGV, 
+    int LBV, 
+    int SP
     )
   {
-    ledRed = LR;
     ledRedValue = LRV; 
-    ledGreen = LG;
     ledGreenValue = LGV; 
-    ledBlue = LB;
     ledBlueValue = LBV;
-    servo = S;
     servoPosition = SP;
-    //drawScene();
   }
 
-  private void drawScene()
-  {
+  private void drawScene(String elevator, int elevatorSpeed, int t) {
+    
+    if(elevatorSpeed < 100){
+      elevatorSpeed = motorSpeedLimitLow;
+    }
+
+    if(elevatorSpeed > 200){
+      elevatorSpeed = motorSpeedLimitHigh;
+    }
+
+    if(elevator == "UP"){
+      arduino.digitalWrite(motorPinHigh, Arduino.HIGH);
+      arduino.digitalWrite(motorPinLow, Arduino.LOW);
+      arduino.analogWrite(motorPinSpeed, elevatorSpeed);
+      println("elevator: "+elevator);
+      println("elevatorSpeed: "+elevatorSpeed);
+    }
+
+    if(elevator == "DOWN"){
+      arduino.digitalWrite(motorPinHigh, Arduino.LOW);
+      arduino.digitalWrite(motorPinLow, Arduino.HIGH);
+      arduino.analogWrite(motorPinSpeed, elevatorSpeed);
+      println("elevator: "+elevator);
+      println("elevatorSpeed: "+elevatorSpeed);
+    }
+
+    if(elevator == "STOP"){
+      arduino.digitalWrite(motorPinHigh, Arduino.LOW);
+      arduino.digitalWrite(motorPinLow, Arduino.LOW);
+      arduino.analogWrite(motorPinSpeed, 0);
+      println("elevator: "+elevator);
+      println("elevatorSpeed: " +elevatorSpeed);
+    }
+
     arduino.analogWrite(ledRed, ledRedValue);
     arduino.analogWrite(ledGreen, ledGreenValue);
     arduino.analogWrite(ledBlue, ledBlueValue);
     arduino.servoWrite(servo, servoPosition);
+    delay(t);
+
+    arduino.digitalWrite(motorPinHigh, Arduino.LOW);
+    arduino.digitalWrite(motorPinLow, Arduino.LOW);
+    arduino.analogWrite(motorPinSpeed, elevatorSpeed);
+    println("elevator: STOP");
   }
 
   public void blink(int f, int t)
   {
-    count = (t*500)/f;
+
+    count = (t*0.5f)/f;
     for (int i = 0; i < count; ++i) {
         arduino.analogWrite(ledRed, ledRedValue);
         arduino.analogWrite(ledGreen, ledGreenValue);
@@ -281,18 +324,14 @@ public class Scene
     }
   }
   
-  private int ledRed;
   private int ledRedValue; 
-  private int ledGreen;
   private int ledGreenValue; 
-  private int ledBlue;
   private int ledBlueValue;
-  private int servo;
   private int servoPosition;
 
   private int time;
   private int frecuency;
-  private int count;
+  private float count;
 
 }
   static public void main(String[] passedArgs) {

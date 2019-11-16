@@ -1,34 +1,68 @@
 public class Scene
 {
   Scene(
-    int LR, int LRV, 
-    int LG, int LGV, 
-    int LB, int LBV, 
-    int S, int SP
+    int LRV, 
+    int LGV, 
+    int LBV, 
+    int SP
     )
   {
-    ledRed = LR;
     ledRedValue = LRV; 
-    ledGreen = LG;
     ledGreenValue = LGV; 
-    ledBlue = LB;
     ledBlueValue = LBV;
-    servo = S;
     servoPosition = SP;
-    //drawScene();
   }
 
-  private void drawScene()
-  {
+  private void drawScene(String elevator, int elevatorSpeed, int t) {
+    
+    if(elevatorSpeed < 100){
+      elevatorSpeed = motorSpeedLimitLow;
+    }
+
+    if(elevatorSpeed > 200){
+      elevatorSpeed = motorSpeedLimitHigh;
+    }
+
+    if(elevator == "UP"){
+      arduino.digitalWrite(motorPinHigh, Arduino.HIGH);
+      arduino.digitalWrite(motorPinLow, Arduino.LOW);
+      arduino.analogWrite(motorPinSpeed, elevatorSpeed);
+      println("elevator: "+elevator);
+      println("elevatorSpeed: "+elevatorSpeed);
+    }
+
+    if(elevator == "DOWN"){
+      arduino.digitalWrite(motorPinHigh, Arduino.LOW);
+      arduino.digitalWrite(motorPinLow, Arduino.HIGH);
+      arduino.analogWrite(motorPinSpeed, elevatorSpeed);
+      println("elevator: "+elevator);
+      println("elevatorSpeed: "+elevatorSpeed);
+    }
+
+    if(elevator == "STOP"){
+      arduino.digitalWrite(motorPinHigh, Arduino.LOW);
+      arduino.digitalWrite(motorPinLow, Arduino.LOW);
+      arduino.analogWrite(motorPinSpeed, 0);
+      println("elevator: "+elevator);
+      println("elevatorSpeed: " +elevatorSpeed);
+    }
+
     arduino.analogWrite(ledRed, ledRedValue);
     arduino.analogWrite(ledGreen, ledGreenValue);
     arduino.analogWrite(ledBlue, ledBlueValue);
     arduino.servoWrite(servo, servoPosition);
+    delay(t);
+
+    arduino.digitalWrite(motorPinHigh, Arduino.LOW);
+    arduino.digitalWrite(motorPinLow, Arduino.LOW);
+    arduino.analogWrite(motorPinSpeed, elevatorSpeed);
+    println("elevator: STOP");
   }
 
   void blink(int f, int t)
   {
-    count = (t*500)/f;
+
+    count = (t*0.5)/f;
     for (int i = 0; i < count; ++i) {
         arduino.analogWrite(ledRed, ledRedValue);
         arduino.analogWrite(ledGreen, ledGreenValue);
@@ -42,17 +76,13 @@ public class Scene
     }
   }
   
-  private int ledRed;
   private int ledRedValue; 
-  private int ledGreen;
   private int ledGreenValue; 
-  private int ledBlue;
   private int ledBlueValue;
-  private int servo;
   private int servoPosition;
 
   private int time;
   private int frecuency;
-  private int count;
+  private float count;
 
 }

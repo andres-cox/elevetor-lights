@@ -7,7 +7,7 @@ Scene scene3;
 
 Fade fade1;
 Fade fade2;
-BlinkTwoScenes blink1;
+BlinkTwoScenes blinkScenes;
 
 
 Arduino arduino; // Crea el objeto Arduino
@@ -21,10 +21,17 @@ int greenVal = 0;
 int blueVal = 0;
 
 int ledRed = 5;
-int ledGreen = 3;
-int ledBlue = 6;
+int ledGreen = 6;
+int ledBlue = 3;
 
-int servo = 13;
+int motorPinHigh = 13;  //9 10 11
+int motorPinLow = 9;
+int motorPinSpeed = 10;
+
+int motorSpeedLimitLow = 100;
+int motorSpeedLimitHigh = 200;
+
+int servo = 11;
 
 
 void setup()
@@ -35,26 +42,26 @@ void setup()
 
   //print( Arduino.list());
   // opening up the Serial port, change the "COM5" and baud rate
-  arduino = new Arduino(this, "/dev/ttyUSB0", 57600); // Configura el puerto como
+  arduino = new Arduino(this, "/dev/ttyUSB0", 57600);
+  arduino.pinMode(motorPinHigh, Arduino.OUTPUT);
+  arduino.pinMode(motorPinLow, Arduino.OUTPUT);
 
   arduino.pinMode(servo, Arduino.SERVO);
   
-  scene1 = new Scene(ledRed, 200,ledBlue, 200,ledGreen, 0,servo,0);
-  scene2 = new Scene(ledRed, 200,ledBlue, 0,ledGreen, 200,servo,170);
-  scene3 = new Scene(ledRed, 200,ledBlue, 0,ledGreen, 0,servo,100);
+  scene1 = new Scene(0, 200, 0, 10);
+  scene2 = new Scene(0, 0, 200, 0);
+  scene3 = new Scene(200, 0, 0, 90);
 
-  blink1 = new BlinkTwoScenes(scene1,scene2,500,4);
-  fade1 = new Fade(scene2,scene3,1);
+  blinkScenes = new BlinkTwoScenes(scene1,scene2);
+  fade1 = new Fade(scene2,scene3);
 
-  blink1.drawBlink();
-  // fade1.drawFade();
-  // scene1.blink(500,4);
-  // fade2 = new Fade(scene2,scene3,2);
-  // scene1.blink(50,3);
-
-
-  // println(scene1.ledRed);
+  // scene3.drawScene("STOP", 0, 3000);
+  // blinkScenes.drawBlink(50,5000);
+  fade1.drawFade("UP", 150, 5000);
+  // scene3.blink(50,5000);
   
 }
 
+void draw(){
+}
 
